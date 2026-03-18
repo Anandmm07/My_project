@@ -1,1 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversational Webcam Recognition Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: radial-gradient(ellipse at top, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .chat-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(25px) saturate(180%);
+            border-radius: 24px;
+            box-shadow: 
+                0 32px 64px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+            width: 95%;
+            max-width: 1400px;
+            height: 92vh;
+            margin: 4vh auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 32px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(transparent, rgba(255, 255, 255, 0.15), transparent);
+            animation: rotate 8s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(45deg, #ffffff, #f0f8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            opacity: 0.95;
+            font-size: 1.2em;
+            position: relative;
+            z-index: 1;
+            font-weight: 400;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .webcam-section {
+            width: 420px;
+            background: linear-gradient(145deg, #f8f9ff 0%, #e8ecff 100%);
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(102, 126, 234, 0.08);
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .webcam-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.1));
+            pointer-events: none;
+        }
+
+        .webcam-container {
+            border: 3px solid #667eea;
+            border-radius: 20px;
+            padding: 8px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.8);
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        #webcam {
+            width: 100%;
+            border-radius: 12px;
+            display: none;
+            background: #000;
+        }
+
+        .webcam-placeholder {
+            padding: 80px 24px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .webcam-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .webcam-btn {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 32px;
+            border-radius: 16px;
+            font-size: 1.05em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .webcam-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .webcam-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .webcam-btn.stop-btn {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+        }
+
+        .capture-indicator {
+            display: none;
+            background: rgba(46, 213, 115, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            text-align: center;
+            font-size: 0.9em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .prompt-input {
+            width: 100%;
+            padding: 20px 24px;
+            border: 2px solid rgba(102, 126, 234, 0.1);
+            border-radius: 16px;
+            font-size: 1.05em;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.9);
+            margin-bottom: 24px;
+            resize: vertical;
+            min-height: 90px;
+            font-family: inherit;
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1;
+        }
+
+        .prompt-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 
+                0 0 0 4px rgba(102, 126, 234, 0.1),
+                0 8px 25px rgba(102, 126, 234, 0.15);
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-2px);
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .start-btn {
+            flex: 1;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 32px;
+            border-radius: 16px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .voice-start-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 20px;
+            border-radius: 16px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            min-width: 56px;
+        }
+
+        .voice-start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+        
+        .voice-btn.recording, .voice-start-btn.recording {
+            animation: pulse-enhanced 2s infinite;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.6);
+        }
+
+        @keyframes pulse-enhanced {
+            0% { 
+                transform: scale(1); 
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.8), 0 8px 25px rgba(255, 107, 107, 0.4); 
+            }
+            50% { 
+                transform: scale(1.1); 
+                box-shadow: 0 0 0 20px rgba(255, 107, 107, 0), 0 8px 25px rgba(255, 107, 107, 0.4); 
+            }
+            100% { 
+                transform: scale(1); 
+                box-shadow: 0 0 0 0 rgba(255, 107, 107, 0), 0 8px 25px rgba(255, 107, 107, 0.4); 
+            }
+        }
+
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(145deg, #fafbff 0%, #f0f4ff 100%);
+            position: relative;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 32px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 16px;
+        }
+
+        .user-message {
+            justify-content: flex-end;
+        }
+
+        .bot-message {
+            justify-content: flex-start;
+        }
+
+        .message-bubble {
+            max-width: 75%;
+            padding: 16px 20px;
+            border-radius: 20px;
+            font-size: 1.05em;
+            line-height: 1.6;
+            word-wrap: break-word;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .user-message .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 8px;
+        }
+
+        .bot-message .message-bubble {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            border-bottom-left-radius: 8px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 32px;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 16px;
+            color: #667eea;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        .chat-input-area {
+            display: none;
+            padding: 24px 32px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .chat-input {
+            flex: 1;
+            border: none;
+            padding: 16px 20px;
+            border-radius: 16px;
+            font-size: 1.05em;
+            resize: none;
+            min-height: 24px;
+            max-height: 120px;
+            font-family: inherit;
+            background: transparent;
+        }
+
+        .chat-input:focus {
+            outline: none;
+        }
+
+        .voice-btn, .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+            min-width: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .voice-btn:hover, .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 16px;
+            margin: 12px 0;
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: #8892b0;
+            padding: 60px 32px;
+            font-size: 1.2em;
+        }
+
+        .welcome-message .icon {
+            font-size: 4em;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.2));
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: white;
+            font-size: 0.9em;
+            font-weight: 500;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .status-indicator.connected {
+            background: rgba(46, 213, 115, 0.9);
+        }
+
+        .status-indicator.error {
+            background: rgba(255, 107, 107, 0.9);
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100vw;
+                height: 100vh;
+                margin: 0;
+                border-radius: 0;
+            }
+
+            .main-content {
+                flex-direction: column;
+            }
+
+            .webcam-section {
+                width: 100%;
+                max-height: 45%;
+                border-right: none;
+                border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+            }
+        }
+
+        .messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 10px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas-bg"></canvas>
+    <div class="status-indicator" id="statusIndicator" style="display: none;"></div>
+    
+    <div class="chat-container">
+        <div class="header">
+            <h1>Conversational Webcam Recognition Chatbot</h1>
+            <p>Start your webcam and have an intelligent conversation with advanced AI</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="webcam-section">
+                <div class="webcam-container">
+                    <video id="webcam" autoplay playsinline></video>
+                    <div class="webcam-placeholder" id="webcamPlaceholder">
+                        <div style="font-size: 3em; margin-bottom: 16px;">📹</div>
+                        <div>Click "Start Webcam" to begin</div>
+                    </div>
+                </div>
+
+                <div class="capture-indicator" id="captureIndicator">
+                    ✓ Frame captured for analysis
+                </div>
+                
+                <div class="webcam-controls">
+                    <button class="webcam-btn" id="startWebcamBtn">📹 Start Webcam</button>
+                    <button class="webcam-btn stop-btn" id="stopWebcamBtn" style="display: none;">⏹️ Stop Webcam</button>
+                </div>
+                
+                <textarea class="prompt-input" id="promptInput" placeholder="What would you like to know? (webcam frame will be captured automatically)..." rows="3"></textarea>
+                
+                <div class="btn-container">
+                    <button class="start-btn" id="startBtn" disabled>
+                        🚀 Start Conversation
+                    </button>
+                    <button class="voice-start-btn" id="voiceStartBtn" title="Voice Input">🎙️</button>
+                </div>
+            </div>
+            
+            <div class="chat-section">
+                <div class="messages" id="messages">
+                    <div class="welcome-message">
+                        <div class="icon">🤖</div>
+                        <div>Start your webcam to begin your conversation with AI!</div>
+                        <div style="margin-top: 16px; font-size: 0.9em; opacity: 0.8;">
+                            The AI will analyze what your webcam sees in real-time
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="loading" id="loading">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Processing your request...</div>
+                </div>
+                
+                <div class="chat-input-area" id="chatInputArea">
+                    <div class="chat-input-container">
+                        <textarea class="chat-input" id="chatInput" placeholder="Continue the conversation..." rows="1"></textarea>
+                        <button class="voice-btn" id="voiceBtn" title="Voice Input">🎤</button>
+                        <button class="send-btn" id="sendBtn" title="Send Message">📤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const webcam = document.getElementById('webcam');
+        const webcamPlaceholder = document.getElementById('webcamPlaceholder');
+        const startWebcamBtn = document.getElementById('startWebcamBtn');
+        const stopWebcamBtn = document.getElementById('stopWebcamBtn');
+        const captureIndicator = document.getElementById('captureIndicator');
+        const promptInput = document.getElementById('promptInput');
+        const startBtn = document.getElementById('startBtn');
+        const voiceStartBtn = document.getElementById('voiceStartBtn');
+        const messages = document.getElementById('messages');
+        const loading = document.getElementById('loading');
+        const chatInputArea = document.getElementById('chatInputArea');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const canvas = document.getElementById('canvas-bg');
+        const ctx = canvas.getContext('2d');
+        
+        // State variables
+        let currentSessionId = null;
+        let webcamStream = null;
+        let isWebcamActive = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let messageCount = 0;
+
+        // Canvas animation
+        let particles = [];
+        const particleCount = 150;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = (Math.random() - 0.5) * 0.8;
+                this.speedY = (Math.random() - 0.5) * 0.8;
+                this.hue = Math.random() * 60 + 200;
+                this.opacity = Math.random() * 0.6 + 0.2;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = `hsl(${this.hue}, 70%, 70%)`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function initCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            requestAnimationFrame(animateCanvas);
+        }
+
+        window.addEventListener('resize', initCanvas);
+        window.addEventListener('load', () => {
+            initCanvas();
+            animateCanvas();
+        });
+
+        // Webcam functionality
+        startWebcamBtn.addEventListener('click', startWebcam);
+        stopWebcamBtn.addEventListener('click', stopWebcam);
+
+        async function startWebcam() {
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'user'
+                    } 
+                });
+                
+                webcam.srcObject = webcamStream;
+                webcam.style.display = 'block';
+                webcamPlaceholder.style.display = 'none';
+                startWebcamBtn.style.display = 'none';
+                stopWebcamBtn.style.display = 'block';
+                isWebcamActive = true;
+                
+                updateStartButton();
+                showStatus('Webcam started', 'connected');
+            } catch (err) {
+                console.error('Error accessing webcam:', err);
+                let errorMessage = 'Could not access webcam. ';
+                if (err.name === 'NotAllowedError') {
+                    errorMessage += 'Please grant webcam permission and try again.';
+                } else if (err.name === 'NotFoundError') {
+                    errorMessage += 'No webcam found.';
+                } else {
+                    errorMessage += 'Please check your webcam and try again.';
+                }
+                showError(errorMessage);
+                showStatus('Webcam error', 'error');
+            }
+        }
+
+        function stopWebcam() {
+            if (webcamStream) {
+                webcamStream.getTracks().forEach(track => track.stop());
+                webcam.srcObject = null;
+                webcam.style.display = 'none';
+                webcamPlaceholder.style.display = 'block';
+                startWebcamBtn.style.display = 'block';
+                stopWebcamBtn.style.display = 'none';
+                isWebcamActive = false;
+                updateStartButton();
+                showStatus('Webcam stopped', 'connected');
+            }
+        }
+
+        function captureFrame() {
+            const canvas = document.createElement('canvas');
+            canvas.width = webcam.videoWidth;
+            canvas.height = webcam.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(webcam, 0, 0);
+            return canvas.toDataURL('image/jpeg', 0.8);
+        }
+
+        function showCaptureIndicator() {
+            captureIndicator.style.display = 'block';
+            setTimeout(() => {
+                captureIndicator.style.display = 'none';
+            }, 2000);
+        }
+
+        function updateStartButton() {
+            const hasWebcam = isWebcamActive;
+            const hasPrompt = promptInput.value.trim().length > 0;
+            startBtn.disabled = !(hasWebcam && hasPrompt);
+        }
+
+        promptInput.addEventListener('input', updateStartButton);
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            const newHeight = Math.min(textarea.scrollHeight, 120);
+            textarea.style.height = newHeight + 'px';
+        }
+
+        promptInput.addEventListener('input', function() {
+            autoResize(this);
+        });
+
+        chatInput.addEventListener('input', function() {
+            autoResize(this);
+        });
+
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!startBtn.disabled) {
+                    startConversation();
+                }
+            }
+        });
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        startBtn.addEventListener('click', startConversation);
+
+        async function startConversation() {
+            if (!isWebcamActive || !promptInput.value.trim()) {
+                showError('Please start webcam and enter a prompt.');
+                return;
+            }
+
+            const imageData = captureFrame();
+            showCaptureIndicator();
+
+            showLoading(true);
+            clearMessages();
+            showStatus('Starting conversation...', 'connected');
+
+            try {
+                const response = await fetch('/start_chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image_b64: imageData,
+                        prompt: promptInput.value.trim()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentSessionId = data.session_id;
+                    addMessage('user', promptInput.value.trim(), true);
+                    addMessage('bot', data.response);
+                    
+                    chatInputArea.style.display = 'flex';
+                    promptInput.value = '';
+                    autoResize(promptInput);
+                    chatInput.focus();
+                    updateStartButton();
+                    showStatus('Conversation started', 'connected');
+                } else {
+                    throw new Error(data.error || 'Failed to start conversation');
+                }
+            } catch (error) {
+                showError(error.message || 'Network error. Please check your connection.');
+                showStatus('Connection error', 'error');
+                console.error('Start conversation error:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message || !currentSessionId) return;
+
+            chatInput.value = '';
+            autoResize(chatInput);
+            addMessage('user', message);
+            showLoading(true);
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: currentSessionId,
+                        prompt: message
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    addMessage('bot', data.response);
+                    showStatus('Message sent', 'connected');
+                } else {
+                    throw new Error(data.error || 'Failed to send message');
+                }
+            } catch (error) {
+                showError(error.message || 'Failed to send message. Please try again.');
+                showStatus('Send failed', 'error');
+                console.error('Send message error:', error);
+            } finally {
+                showLoading(false);
+                chatInput.focus();
+            }
+        }
+        
+        // Voice functionality
+        voiceBtn.addEventListener('click', () => toggleRecording('chat'));
+        voiceStartBtn.addEventListener('click', () => toggleRecording('initial'));
+
+        async function toggleRecording(mode) {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording(mode);
+            }
+        }
+        
+        async function startRecording(mode) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+                        ? 'audio/webm;codecs=opus' 
+                        : 'audio/webm'
+                });
+                
+                mediaRecorder.start(1000);
+                isRecording = true;
+                
+                if (mode === 'initial') {
+                    voiceStartBtn.classList.add('recording');
+                    voiceStartBtn.textContent = '🛑';
+                    startBtn.disabled = true;
+                } else {
+                    voiceBtn.classList.add('recording');
+                    voiceBtn.textContent = '🛑';
+                    chatInput.disabled = true;
+                    sendBtn.disabled = true;
+                }
+                
+                audioChunks = [];
+                showStatus('Recording...', 'connected');
+                
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = async () => {
+                    stream.getTracks().forEach(track => track.stop());
+                    
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+                    
+                    if (audioBlob.size === 0) {
+                        showError('No audio recorded. Please try again.');
+                        resetRecordingUI(mode);
+                        return;
+                    }
+                    
+                    const formData = new FormData();
+                    formData.append('audio', audioBlob, 'audio.webm');
+                    
+                    resetRecordingUI(mode);
+                    showLoading(true);
+                    showStatus('Processing audio...', 'connected');
+                    
+                    try {
+                        let endpoint = '/transcribe';
+                        if (mode === 'chat') {
+                            endpoint = '/chat_voice';
+                            formData.append('session_id', currentSessionId);
+                        }
+                        
+                        const response = await fetch(endpoint, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            if (mode === 'initial') {
+                                promptInput.value = data.transcript;
+                                autoResize(promptInput);
+                                updateStartButton();
+                                showStatus('Audio transcribed', 'connected');
+                            } else {
+                                addMessage('user', '🎙️ ' + data.transcript, true);
+                                if (data.response) {
+                                    addMessage('bot', data.response);
+                                }
+                                showStatus('Voice message sent', 'connected');
+                            }
+                        } else {
+                            throw new Error(data.error || 'Failed to process audio');
+                        }
+                    } catch (error) {
+                        showError(error.message || 'Failed to process voice input.');
+                        showStatus('Audio processing failed', 'error');
+                        console.error('Voice processing error:', error);
+                    } finally {
+                        showLoading(false);
+                    }
+                };
+                
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                showError('Could not access microphone. Please grant permission and try again.');
+                showStatus('Microphone error', 'error');
+            }
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+        }
+
+        function resetRecordingUI(mode) {
+            isRecording = false;
+            if (mode === 'initial') {
+                voiceStartBtn.classList.remove('recording');
+                voiceStartBtn.textContent = '🎙️';
+                updateStartButton();
+            } else {
+                voiceBtn.classList.remove('recording');
+                voiceBtn.textContent = '🎤';
+                chatInput.disabled = false;
+                sendBtn.disabled = false;
+            }
+        }
+
+        function addMessage(type, content, isVoice = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            
+            const bubbleDiv = document.createElement('div');
+            bubbleDiv.className = 'message-bubble';
+            
+            if (type === 'bot') {
+                bubbleDiv.innerHTML = '';
+                messageDiv.appendChild(bubbleDiv);
+                messages.appendChild(messageDiv);
+                scrollToBottom();
+                
+                let i = 0;
+                const typingSpeed = 30;
+                function typeWriter() {
+                    if (i < content.length) {
+                        bubbleDiv.innerHTML += content.charAt(i);
+                        i++;
+                        setTimeout(typeWriter, typingSpeed);
+                        scrollToBottom();
+                    }
+                }
+                typeWriter();
+            } else {
+                bubbleDiv.textContent = content;
+                messageDiv.appendChild(bubbleDiv);
+                messages.appendChild(messageDiv);
+                scrollToBottom();
+            }
+            
+            messageCount++;
+            setTimeout(scrollToBottom, 100);
+        }
+
+        function scrollToBottom() {
+            messages.scrollTo({
+                top: messages.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        function clearMessages() {
+            messages.innerHTML = '';
+            messageCount = 0;
+        }
+
+        function showLoading(show) {
+            loading.style.display = show ? 'block' : 'none';
+            if (show) {
+                scrollToBottom();
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `⚠️ ${message}`;
+            messages.appendChild(errorDiv);
+            scrollToBottom();
+            
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.remove();
+                }
+            }, 8000);
+        }
+
+        function showStatus(message, type) {
+            statusIndicator.textContent = message;
+            statusIndicator.className = `status-indicator ${type}`;
+            statusIndicator.style.display = 'block';
+            
+            setTimeout(() => {
+                statusIndicator.style.display = 'none';
+            }, 3000);
+        }
+
+        window.addEventListener('online', () => {
+            showStatus('Connection restored', 'connected');
+        });
+
+        window.addEventListener('offline', () => {
+            showStatus('Connection lost', 'error');
+        });
+
+        window.addEventListener('beforeunload', () => {
+            stopWebcam();
+            if (isRecording) {
+                stopRecording();
+            }
+        });
+
+        
+        setTimeout(() => {
+            showStatus('Ready to chat', 'connected');
+        }, 1000);
+    </script>
+</body>
+</html>
