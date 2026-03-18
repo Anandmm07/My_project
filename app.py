@@ -18,3 +18,4 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 # Configure Gemini API
+api_key = "AIzaSyAj7QePSFe7l4dVBBcfbLD8cYXt-uc2bH0"
