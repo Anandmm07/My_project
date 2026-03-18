@@ -12,7 +12,11 @@ from typing import Dict, Optional
 from dotenv import load_dotenv
 import json
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
+load_dotenv()
 
 # Enhanced session storage with automatic cleanup
 class SessionManager:
