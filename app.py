@@ -148,3 +148,5 @@ generation_config = {
     "top_k": 40,
     "max_output_tokens": 2048,
 }
+def process_webcam_frame(image_b64: str) -> dict:
+    """Process webcam frame data"""
