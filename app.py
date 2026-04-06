@@ -98,3 +98,4 @@ session_manager = SessionManager()
 def get_gemini_model():
     """Get Gemini model with fallback options"""
     models_to_try = [
+        'gemini-2.0-flash-exp',
