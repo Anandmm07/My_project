@@ -92,3 +92,9 @@ class SessionManager:
             'active_sessions': len(self.sessions),
             'total_messages': sum(s['message_count'] for s in self.sessions.values())
         }
+# Initialize session manager
+session_manager = SessionManager()
+# Initialize Gemini models with error handling
+def get_gemini_model():
+    """Get Gemini model with fallback options"""
+    models_to_try = [
