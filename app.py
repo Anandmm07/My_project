@@ -150,3 +150,4 @@ generation_config = {
 }
 def process_webcam_frame(image_b64: str) -> dict:
     """Process webcam frame data"""
+try:
