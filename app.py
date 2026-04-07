@@ -182,3 +182,7 @@ def health():
 @app.route('/start_chat', methods=['POST'])
 def start_chat():
     """Handle initial webcam frame and first prompt"""
+    try:
+        data = request.get_json()
+            if not data:
+                return jsonify({'error': 'No JSON data provided'}), 400
