@@ -170,3 +170,12 @@ def process_webcam_frame(image_b64: str) -> dict:
 def index():
      """Serve the main chat interface"""
     return render_template('index.html')
+@app.route('/health')
+def health():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'model_available': model is not None,
+        'session_stats': session_manager.get_session_stats(),
+        'timestamp': datetime.now().isoformat()
+    })
