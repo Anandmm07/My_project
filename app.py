@@ -179,3 +179,5 @@ def health():
         'session_stats': session_manager.get_session_stats(),
         'timestamp': datetime.now().isoformat()
     })
+@app.route('/start_chat', methods=['POST'])
+def start_chat():
