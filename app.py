@@ -307,4 +307,13 @@ def chat():
             conversation_history = []
 
 # Add initial webcam frame context for recent messages
-            
+            if session.get('message_count', 0) < 5:
+                conversation_history.append({
+                    'role': 'user',
+                    'parts': [
+                        {
+                            'inline_data': {
+                                'mime_type': session['image']['mime_type'],
+                                'data': session['image']['data_b64']
+                            }
+                        },
