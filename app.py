@@ -262,3 +262,4 @@ def start_chat():
             logger.error(f"Error generating initial response: {e}")
             return jsonify({'error': 'Failed to generate response. Please try again.'}), 500
     
+    except Exception as e:
