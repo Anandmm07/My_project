@@ -265,3 +265,6 @@ def start_chat():
     except Exception as e:
         logger.error(f"Unexpected error in start_chat: {e}")
         return jsonify({'error': 'An unexpected error occurred. Please try again.'}), 500
+
+@app.route('/chat', methods=['POST'])
+def chat():
