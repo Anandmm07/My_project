@@ -230,3 +230,13 @@ def start_chat():
         
         try:
             # Generate response
+            response = model.generate_content(
+                [user_message],
+                safety_settings=safety_settings,
+                generation_config=generation_config
+            )
+            
+            if not response.text:
+                if response.candidates and response.candidates[0].finish_reason:
+                    reason = response.candidates[0].finish_reason
+                    if reason == "SAFETY":
