@@ -296,3 +296,4 @@ def chat():
             return jsonify({'error': 'AI model not available. Please try again later.'}), 503
 
 # Rate limiting
+        if session.get('message_count', 0) >= 50:
