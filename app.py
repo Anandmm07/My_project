@@ -317,3 +317,13 @@ def chat():
                                 'data': session['image']['data_b64']
                             }
                         },
+                        {'text': '[Webcam frame context for ongoing conversation]'}
+                    ]
+                })
+            
+            # Add recent history (last 10 messages)
+            recent_history = session['history'][-10:] if len(session['history']) > 10 else session['history']
+            conversation_history.extend(recent_history)
+            
+            # Add current message
+            conversation_history.append(user_message)
