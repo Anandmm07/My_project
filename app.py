@@ -327,3 +327,14 @@ def chat():
             
             # Add current message
             conversation_history.append(user_message)
+             # Generate response
+            response = model.generate_content(
+                conversation_history,
+                safety_settings=safety_settings,
+                generation_config=generation_config
+            )
+            
+            if not response.text:
+                if response.candidates and response.candidates[0].finish_reason:
+                    reason = response.candidates[0].finish_reason
+                    if reason == "SAFETY":
