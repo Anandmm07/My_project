@@ -305,4 +305,6 @@ def chat():
         try:
             # Build conversation history
             conversation_history = []
+
+# Add initial webcam frame context for recent messages
             
