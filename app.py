@@ -294,3 +294,5 @@ def chat():
         # Check model availability
         if not model:
             return jsonify({'error': 'AI model not available. Please try again later.'}), 503
+
+# Rate limiting
