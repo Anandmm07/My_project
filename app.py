@@ -250,3 +250,5 @@ def start_chat():
             
             # Update session
             session_manager.update_session_history(session_id, user_message, model_message)
+
+            logger.info(f"Started conversation for session {session_id}")
