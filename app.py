@@ -268,3 +268,29 @@ def start_chat():
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    """Handle subsequent text chat messages"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+        
+        session_id = data.get('session_id')
+        prompt_text = data.get('prompt', '').strip()
+        
+        if not session_id:
+            return jsonify({'error': 'Session ID is required'}), 400
+        
+        if not prompt_text:
+            return jsonify({'error': 'Prompt cannot be empty'}), 400
+        
+        if len(prompt_text) > 2000:
+            return jsonify({'error': 'Message too long (max 2000 characters)'}), 400
+        
+        # Get session
+        session = session_manager.get_session(session_id)
+        if not session:
+            return jsonify({'error': 'Session not found or expired. Please start a new conversation.'}), 404
+        
+        # Check model availability
+        if not model:
+            return jsonify({'error': 'AI model not available. Please try again later.'}), 503
