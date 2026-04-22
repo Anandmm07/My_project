@@ -217,3 +217,15 @@ def start_chat():
 
         user_message = {
             'role': 'user',
+            'parts': [
+                {
+                    'inline_data': {
+                        'mime_type': image_data['mime_type'],
+                        'data': image_data['data_b64']
+                    }
+                },
+                {'text': prompt_text}
+            ]
+        }
+        
+        try:
